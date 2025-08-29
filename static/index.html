@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Conversational AI Agent</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* Reset */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #1e1e2f;
+      color: #f0f0f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .container {
+      background: #2c2c3e;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+      width: 480px;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    header {
+      background: linear-gradient(90deg, #4f46e5, #3b82f6);
+      padding: 1.2rem 1.5rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: #ecedef;
+      user-select: none;
+      box-shadow: 0 4px 15px rgba(79, 70, 229, 0.6);
+    }
+    #startBtn {
+      background: #3b82f6;
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      font-size: 1.05rem;
+      padding: 0.85rem 2rem;
+      margin: 1.25rem auto;
+      border-radius: 9999px;
+      cursor: pointer;
+      box-shadow: 0 8px 25px rgba(59, 130, 246, 0.5);
+      transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      user-select: none;
+      display: block;
+      width: fit-content;
+    }
+    #startBtn:disabled {
+      background: #667085;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+    #startBtn:hover:not(:disabled) {
+      background: #2563eb;
+      box-shadow: 0 12px 35px rgba(37, 99, 235, 0.75);
+    }
+    #status {
+      text-align: center;
+      font-weight: 600;
+      font-size: 1rem;
+      color: #60a5fa;
+      min-height: 24px;
+      margin-bottom: 0.75rem;
+      user-select: none;
+    }
+    #chatContainer {
+      flex-grow: 1;
+      background: #1f2937;
+      border-radius: 0 0 20px 20px;
+      padding: 1rem 1.25rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.9rem;
+      scrollbar-width: thin;
+      scrollbar-color: #4f46e5 #111827;
+      min-height: 360px;
+      max-height: 480px;
+    }
+    #chatContainer::-webkit-scrollbar {
+      width: 8px;
+    }
+    #chatContainer::-webkit-scrollbar-track {
+      background: #111827;
+      border-radius: 10px;
+    }
+    #chatContainer::-webkit-scrollbar-thumb {
+      background-color: #4f46e5;
+      border-radius: 10px;
+      border: 2px solid #111827;
+    }
+    #spokenText {
+  display: block;
+  min-height: 40px;
+  padding: 10px 14px;
+  margin: 12px 0;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f1f1f1;
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: "Segoe UI", Roboto, sans-serif;
+  white-space: pre-wrap;
+  word-break: break-word;
+  transition: all 0.3s ease;
+}
+    .chat-message {
+      max-width: 75%;
+      padding: 0.85rem 1.1rem;
+      border-radius: 18px;
+      font-size: 0.97rem;
+      line-height: 1.4;
+      word-wrap: break-word;
+      white-space: pre-wrap;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.25);
+      user-select: text;
+      transition: background-color 0.3s ease;
+      position: relative;
+    }
+    .user-message {
+      align-self: flex-end;
+      background: #4f46e5;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+    .user-message::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      right: -10px;
+      width: 0;
+      height: 0;
+      border-top: 10px solid #4f46e5;
+      border-left: 10px solid transparent;
+    }
+    .ai-message {
+      align-self: flex-start;
+      background: #434857;
+      color: #cbd5e1;
+      border-bottom-left-radius: 4px;
+    }
+    .ai-message::before {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: -10px;
+      width: 0;
+      height: 0;
+      border-top: 10px solid #434857;
+      border-right: 10px solid transparent;
+    }
+    #audioStatus {
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: #e0e0f0;
+      background-color: #3c3f58;
+      text-align: center;
+      user-select: none;
+      min-height: 48px;
+      white-space: pre-wrap;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    audio {
+      max-width: 100%;
+      outline: none;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgb(79 70 229 / 0.7);
+    }
+    @media (max-width: 520px) {
+      .container {
+        width: 100%;
+        max-width: 100%;
+      }
+      #chatContainer {
+        max-height: 350px;
+      }
+    }
+        /* ---------- Buttons ---------- */
+    .btn {
+      padding: 0.6rem 1.2rem;
+      border-radius: 10px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease, transform 0.2s ease;
+      font-size: 0.95rem;
+    }
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+    .btn.primary {
+      background: #4f46e5;
+      color: #fff;
+    }
+    .btn.primary:hover {
+      background: #4338ca;
+    }
+    .btn.secondary {
+      background: #374151;
+      color: #e5e7eb;
+    }
+    .btn.secondary:hover {
+      background: #4b5563;
+    }
+    .btn.danger {
+      background: #dc2626;
+      color: #fff;
+    }
+    .btn.danger:hover {
+      background: #b91c1c;
+    }
+
+    /* ---------- Icon Buttons ---------- */
+    .icon-btn {
+      background: none;
+      border: none;
+      color: #f0f0f5;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0.4rem 0.8rem;
+      border-radius: 8px;
+      transition: background 0.3s ease;
+    }
+    .icon-btn:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    /* ---------- Banner ---------- */
+    .banner {
+      background: #1e293b;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      text-align: center;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .banner strong {
+      color: #f9fafb;
+    }
+
+    /* ---------- Modal ---------- */
+    .modal-backdrop {
+      display: none; /* Hidden by default */
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-backdrop.active {
+      display: flex;
+    }
+
+    .modal {
+      background: #2c2c3e;
+      border-radius: 16px;
+      width: 90%;
+      max-width: 480px;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: fadeInUp 0.3s ease;
+    }
+
+    .modal header {
+      background: #3b82f6;
+      color: #fff;
+      font-weight: 700;
+      font-size: 1.2rem;
+      padding: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal main {
+      padding: 1.2rem 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .row-split {
+      display: flex;
+      gap: 1rem;
+    }
+    .form-row {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .form-row label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+    .form-row input {
+      background: #1f2937;
+      border: 1px solid #374151;
+      border-radius: 8px;
+      padding: 0.6rem 0.8rem;
+      color: #f0f0f5;
+      font-size: 0.95rem;
+    }
+    .form-row input:focus {
+      border-color: #3b82f6;
+      outline: none;
+      box-shadow: 0 0 0 2px rgba(59,130,246,0.5);
+    }
+
+    .modal footer {
+      padding: 1rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      background: #1f2937;
+      border-top: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* ---------- Animations ---------- */
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+  </style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="Conversational AI chat interface">
+    <header>
+      <div class="title"><span class="dot" aria-hidden="true"></span> <span>Conversational AI Agent</span></div>
+      <div class="header-actions">
+        <button class="icon-btn" id="settingsBtn" aria-haspopup="dialog" aria-controls="settingsModal">Settings</button>
+      </div>
+    </header>
+
+    <button id="startBtn" aria-label="Start or stop recording audio">Start Recording</button>
+    <div id="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="spokenText"></div>
+    <div id="chatContainer" aria-live="polite" aria-relevant="additions"></div>
+    <div id="audioStatus" aria-live="assertive" aria-atomic="true"></div>
+
+    <div class="banner">Tip: Provide your own API keys in <strong>Settings</strong>. They are stored locally in your browser (localStorage) and sent to your backend with each request.</div>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-backdrop" id="settingsBackdrop" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="modal" id="settingsModal">
+      <header>
+        <div id="settingsTitle" class="title"><span>⚙️ Settings</span></div>
+        <button class="icon-btn" id="closeSettings">Close</button>
+      </header>
+      <main>
+        <div class="row-split">
+          <div class="form-row">
+            <label for="assemblyKey">AssemblyAI API Key</label>
+            <input id="assemblyKey" type="password" placeholder="sk_..." autocomplete="off" />
+          </div>
+          <div class="form-row">
+            <label for="geminiKey">Gemini API Key</label>
+            <input id="geminiKey" type="password" placeholder="AIza..." autocomplete="off" />
+          </div>
+        </div>
+        <div class="row-split">
+          <div class="form-row">
+            <label for="murfKey">Murf API Key</label>
+            <input id="murfKey" type="password" placeholder="murf_..." autocomplete="off" />
+          </div>
+          <div class="form-row">
+            <label for="newsKey">NewsAPI Key</label>
+            <input id="newsKey" type="password" placeholder="news_..." autocomplete="off" />
+          </div>
+        </div>
+      </main>
+      <footer>
+        <button class="btn danger" id="clearKeys">Clear Keys</button>
+        <button class="btn secondary" id="cancelSettings">Cancel</button>
+        <button class="btn primary" id="saveSettings">Save</button>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    let isRecording = false;
+let mediaRecorder;
+let recordedChunks = [];
+
+const els = {
+  startBtn: document.getElementById('startBtn'),
+  status: document.getElementById('status'),
+  chat: document.getElementById('chatContainer'),
+  audioStatus: document.getElementById('audioStatus'),
+  spokenText: document.getElementById('spokenText'),
+  settingsBtn: document.getElementById('settingsBtn'),
+  settingsBackdrop: document.getElementById('settingsBackdrop'),
+  closeSettings: document.getElementById('closeSettings'),
+  cancelSettings: document.getElementById('cancelSettings'),
+  saveSettings: document.getElementById('saveSettings'),
+  clearKeys: document.getElementById('clearKeys'),
+  assemblyKey: document.getElementById('assemblyKey'),
+  geminiKey: document.getElementById('geminiKey'),
+  murfKey: document.getElementById('murfKey'),
+  newsKey: document.getElementById('newsKey'),
+};
+
+const Settings = {
+  LS_KEY: 'agent_settings_v2',
+  get() {
+    try { return JSON.parse(localStorage.getItem(this.LS_KEY)) || {}; } catch { return {}; }
+  },
+  set(obj) { localStorage.setItem(this.LS_KEY, JSON.stringify(obj || {})); },
+  clear() { localStorage.removeItem(this.LS_KEY); },
+};
+
+let sessionId = crypto.randomUUID();
+
+let recognition;
+(function initSpeech() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    console.warn('SpeechRecognition API not supported in this browser.');
+    els.spokenText.textContent = 'Speech recognition not supported in this browser.';
+    return;
+  }
+  recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+  recognition.continuous = false;
+  recognition.interimResults = true;
+  recognition.onresult = (event) => {
+    let interim = '', finalTxt = '';
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      const seg = event.results[i][0].transcript;
+      if (event.results[i].isFinal) finalTxt += seg; else interim += seg;
+    }
+    els.spokenText.textContent = finalTxt || interim || '';
+  };
+})();
+
+function appendChatMessage(text, className) {
+  const div = document.createElement('div');
+  div.className = 'chat-message ' + className;
+  div.textContent = text;
+  els.chat.appendChild(div);
+  els.chat.scrollTop = els.chat.scrollHeight;
+}
+
+function setBusy(busy, label) {
+  els.startBtn.disabled = !!busy;
+  els.status.textContent = label || (busy ? 'Working…' : '');
+}
+
+function playAiAudio(url) {
+  const oldAudio = els.audioStatus.querySelector('audio');
+  if (oldAudio) { oldAudio.pause(); oldAudio.remove(); }
+  if (!url) { els.audioStatus.textContent = 'No audio available'; return; }
+  const audio = document.createElement('audio');
+  audio.controls = true; audio.src = url; audio.autoplay = true;
+  els.audioStatus.textContent = 'AI speaking…';
+  els.audioStatus.appendChild(audio);
+  audio.onended = () => { els.audioStatus.textContent = 'AI audio playback ended.'; };
+  audio.onerror = () => { els.audioStatus.textContent = 'Error playing audio.'; };
+}
+
+function getBackendUrl() {
+  return `/agent/chat/${sessionId}`;
+}
+
+els.startBtn.onclick = async () => {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = handleStop;
+
+      mediaRecorder.start();
+      if (recognition) recognition.start();
+
+      els.startBtn.textContent = 'Stop Recording';
+      els.status.textContent = 'Recording audio…';
+      isRecording = true;
+    } catch (err) {
+      els.status.textContent = 'Failed to access microphone';
+      console.error(err);
+    }
+  } else {
+    mediaRecorder.stop();
+    if (recognition) recognition.stop();
+    els.startBtn.textContent = 'Start Recording';
+    els.status.textContent = 'Processing audio…';
+    isRecording = false;
+  }
+};
+
+async function handleStop() {
+  setBusy(true, 'Uploading audio and getting response…');
+  const audioBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+  const formData = new FormData();
+  formData.append('file', audioBlob, 'input.webm');
+
+  const cfg = Settings.get();
+  const configPayload = {
+    assemblyAIKey: cfg.assemblyKey || '',
+    geminiKey: cfg.geminiKey || '',
+    murfKey: cfg.murfKey || '',
+    newsApiKey: cfg.newsKey || '',
+    clientMeta: { sessionId, userAgent: navigator.userAgent }
+  };
+  formData.append('config', new Blob([JSON.stringify(configPayload)], { type: 'application/json' }));
+
+  const url = getBackendUrl();
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'X-AssemblyAI-Key': cfg.assemblyKey || '',
+        'X-Gemini-Key': cfg.geminiKey || '',
+        'X-Murf-Key': cfg.murfKey || '',
+        'X-NewsAPI-Key': cfg.newsKey || ''
+      },
+      body: formData
+    });
+
+    if (!res.ok) {
+      const errData = await safeJson(res);
+      throw new Error((errData && (errData.detail || errData.error)) || `HTTP ${res.status}`);
+    }
+
+    const data = await res.json();
+    console.log("API response data:", data);
+
+    els.spokenText.textContent = '';
+    if (data.user_text) appendChatMessage(data.user_text, 'user-message');
+    if (data.llm_text) appendChatMessage(data.llm_text, 'ai-message');
+    if (data.audio_url) playAiAudio(data.audio_url);
+
+  } catch (err) {
+    console.error('Error:', err);
+    appendChatMessage('⚠️ ' + err.message, 'ai-message');
+    els.audioStatus.textContent = 'Error: ' + err.message;
+  } finally {
+    setBusy(false, '');
+  }
+}
+
+async function safeJson(res) {
+  try { return await res.json(); } catch { return null; }
+}
+
+// -------- Settings Modal Logic --------
+
+function openSettings() {
+  const cfg = Settings.get();
+  els.assemblyKey.value = cfg.assemblyKey || '';
+  els.geminiKey.value = cfg.geminiKey || '';
+  els.murfKey.value = cfg.murfKey || '';
+  els.newsKey.value = cfg.newsKey || '';
+  els.settingsBackdrop.style.display = 'flex';
+}
+function closeSettings() {
+  els.settingsBackdrop.style.display = 'none';
+}
+
+els.settingsBtn.onclick = openSettings;
+els.closeSettings.onclick = closeSettings;
+els.cancelSettings.onclick = closeSettings;
+els.saveSettings.onclick = () => {
+  Settings.set({
+    assemblyKey: els.assemblyKey.value.trim(),
+    geminiKey: els.geminiKey.value.trim(),
+    murfKey: els.murfKey.value.trim(),
+    newsKey: els.newsKey.value.trim(),
+  });
+  closeSettings();
+};
+els.clearKeys.onclick = () => {
+  Settings.clear();
+  els.assemblyKey.value = '';
+  els.geminiKey.value = '';
+  els.murfKey.value = '';
+  els.newsKey.value = '';
+};
+
+  </script>
+</body>
+</html>
+
